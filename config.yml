@@ -1,0 +1,70 @@
+hostPort: 127.0.0.1:7199
+lowercaseOutputName: false
+lowercaseOutputLabelNames: false
+whitelistObjectNames: ["com.tcc.safepoint.agent:*", "solr/*:type=solr_query,*", "org.apache.cassandra.net:*", "org.apache.cassandra.metrics:*", "org.apache.cassandra.db:*", "java.lang:*"]
+blacklistObjectNames: ["org.apache.cassandra.db:type=CompactionManager", "org.apache.cassandra.db:type=StorageService", "org.apache.cassandra.db:type=StorageProxy",
+"org.apache.cassandra.metrics:name=SnapshotsSize,*",
+"org.apache.cassandra.metrics:name=EstimatedPartitionCount,*",
+"org.apache.cassandra.metrics:name=EstimatedRowCount,*",
+"org.apache.cassandra.metrics:name=TotalDiskSpaceUsed,*",
+"org.apache.cassandra.metrics:name=TombstoneScannedHistogram,*",
+"org.apache.cassandra.metrics:name=SSTablesPerReadHistogram,*",
+"org.apache.cassandra.metrics:keyspace=*system*,*",
+"org.apache.cassandra.metrics:keyspace=*dse*,*",
+"org.apache.cassandra.metrics:keyspace=*OpsCenter*,*",
+"org.apache.cassandra.db:keyspace=OpsCenter,*",
+"org.apache.cassandra.db:keyspace=system*,*",
+"org.apache.cassandra.db:keyspace=dse*,*",
+"org.apache.cassandra.metrics:name=RecentBloomFilterFalsePositives,*",
+"org.apache.cassandra.metrics:name=IndexSummaryOffHeapMemoryUsed,*",
+"org.apache.cassandra.metrics:ame=CompressionMetadataOffHeapMemoryUsed,*",
+"org.apache.cassandra.metrics:name=MemtableSwitchCount,*",
+"org.apache.cassandra.metrics:name=CasCommitLatency,*",
+"org.apache.cassandra.metrics:name=CasCommitTotalLatency,*",
+"org.apache.cassandra.metrics:name=CasPrepareTotalLatency,*",
+"org.apache.cassandra.metrics:name=CasPrepareLatency,*",
+"org.apache.cassandra.metrics:name=CasProposeLatency,*",
+"org.apache.cassandra.metrics:name=CasCommitLatency,*",
+"org.apache.cassandra.metrics:type=ColumnFamily,keyspace=*,scope=*,name=CasCommitTotalLatency,*",
+"org.apache.cassandra.metrics:type=ColumnFamily,keyspace=*,scope=*,name=CompressionMetadataOffHeapMemoryUsed,*",
+"org.apache.cassandra.db:type=ColumnFamily,keyspace=*,columnfamily=*CompressionMetadataOffHeapMemoryUsed,*"]
+rules:
+- pattern: 'org.apache.cassandra.metrics<type=(Connection|Streaming), scope=(\S*), name=(\S*)><>(Count|Value)'
+  name: cassandra_$1_$3
+  labels:
+    "address": "$2"
+- pattern: 'org.apache.cassandra.metrics<type=(HintedHandOffManager)(?:, ((?!scope)\S*)=(\S*))?(?:, scope=(\S*))?, name=Hints_created-(\S*)><>(\S*)(:)'
+  name: cassandra_$1_Hints_created
+  labels:
+    "ip": "$5"
+    "function": "$6"
+- pattern: 'org.apache.cassandra.metrics<type=(\S*)(?:, ((?!scope)\S*)=(\S*))?(?:, scope=(\S*))?, name=(\S*)><>(\S*)(thPercentile:)'
+  name: cassandra_$1_$5
+  labels:
+    "$1": "$4"
+    "$2": "$3"
+    "function": "Percentile"
+    "Percentile": "$6"
+- pattern: 'org.apache.cassandra.metrics<type=(\S*)(?:, ((?!scope)\S*)=(\S*))?(?:, scope=(\S*))?, name=(\S*)><>(\S*)(:)'
+  name: cassandra_$1_$5
+  labels:
+    "$1": "$4"
+    "$2": "$3"
+    "function": "$6"
+- pattern: 'org.apache.cassandra.metrics<type=(\S*)(?:, (\S*)=(\S*))?(?:, (\S*))'
+  name: cassandra_$1_$6_scope
+  labels:
+    "$1": "$5"
+    "$2": "$3"
+    "function": "$7"
+    "somthing": "$4"
+- pattern: 'org.apache.cassandra.net<type=FailureDetector><>DownEndpointCount'
+- pattern: 'java.lang<type=GarbageCollector, name=(.+)><>CollectionCount'
+- pattern: 'java.lang<type=GarbageCollector, name=(.+)><>CollectionTime'
+- pattern: 'solr/(\w+).(\w+)<type=solr_query, id=com.datastax.bdp.search.solr.handler.component.CqlSearchHandler><>(\w+)'
+  name: solr_$3
+  labels:
+    "keyspace": "$1"
+    "table": "$2"
+- pattern: 'com.tcc.safepoint.agent<type=Safepoint><>(\w+)'
+  name: com_tcc_safepoint_agent_$1
